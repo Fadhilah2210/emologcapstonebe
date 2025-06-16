@@ -9,7 +9,4 @@ router.post("/register", authController.register);
 // Route untuk login user
 router.post("/login", authController.login);
 
-// Route untuk mendapatkan profile user (protected route)
-router.get("/profile", authMiddleware, authController.profile);
-
 module.exports = router;

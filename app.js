@@ -4,6 +4,8 @@ require("dotenv").config();
 
 const authRouter = require("./src/Routes/authRoutes");
 const emotionRouter = require("./src/Routes/emotions"); // route untuk koneksi ke AI
+const userRouter = require("./src/Routes/userRoutes");
+const entryRoutes = require("./src/Routes/entryRoutes"); // ✅ route journaling
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,7 +16,9 @@ app.use(express.json()); // Untuk parsing body JSON
 
 // Routes
 app.use("/api/auth", authRouter);       // endpoint auth (login, register, dll)
-app.use("/api/emotion", emotionRouter); // endpoint untuk AI suggestion
+app.use("/api/emotion", emotionRouter); // endpoint AI emotion suggestion
+app.use("/api", userRouter);            // endpoint user (profile, dsb)
+app.use("/api", entryRoutes);   // ✅ endpoint journaling
 
 // Root endpoint (optional)
 app.get("/", (req, res) => {

@@ -4,78 +4,142 @@ const Entry = require('../Model/entryModel');
 // @route   POST /api/entries
 // @access  Private
 exports.createEntry = async (req, res) => {
-    const { emotionId, entryText } = req.body;
-    const userId = req.user.userId; 
+  const { title, entry_text, emotion_id, entry_date } = req.body;
+  const userId = req.user.id; // ✅ dari token JWT (pastikan middleware benar)
 
-    if (!emotionId) {
-        return res.status(400).json({ message: 'Emotion ID harus diisi.' });
-    }
+  try {
+    const result = await Entry.create({
+      userId,
+      title,
+      entryText: entry_text,
+      entryDate: entry_date,
+    });
 
-    try {
-        const newEntry = await Entry.create({ userId, emotionId, entryText });
-        res.status(201).json(newEntry);
-    } catch (error) {
-        console.error('Create entry error:', error);
-        res.status(500).json({ message: 'Gagal membuat entri baru.' });
-    }
+    res.status(201).json({ message: "Entry berhasil dibuat", entry: result });
+  } catch (error) {
+    console.error("Create entry error:", error);
+    res.status(500).json({ message: "Gagal membuat entri baru", error });
+  }
 };
 
 // @desc    Mendapatkan semua entri milik user yang login
 // @route   GET /api/entries
 // @access  Private
+// @desc    Mendapatkan semua entri milik user yang login
+// @route   GET /api/entries
+// @access  Private
 exports.getAllEntries = async (req, res) => {
-    const userId = req.user.userId;
+  const userId = req.user.id;
 
-    try {
-        const entries = await Entry.findAllByUser(userId);
-        res.status(200).json(entries);
-    } catch (error) {
-        console.error('Get all entries error:', error);
-        res.status(500).json({ message: 'Gagal mengambil data entri.' });
-    }
+  try {
+    const entries = await Entry.findAllByUser(userId);
+
+    const formattedEntries = entries.map(entry => ({
+        id: entry.id,
+        title: entry.title,
+        entry_text: entry.entry_text,
+        emotion_id: entry.emotion_id,
+        entry_date: entry.entry_date instanceof Date
+            ? entry.entry_date.toISOString().split("T")[0]
+            : entry.entry_date,
+        created_at: entry.created_at,
+    }));
+
+    res.status(200).json(formattedEntries);
+  } catch (error) {
+    console.error('Get all entries error:', error);
+    res.status(500).json({ message: 'Gagal mengambil data entri.' });
+  }
 };
 
-/**
- * @desc    Mendapatkan satu entri berdasarkan ID
- * @route   GET /api/entries/:id
- * @access  Private
- */
+// @desc    Mendapatkan entri 7 hari terakhir milik user
+// @route   GET /api/entries/recent
+// @access  Private
+exports.getRecentEntries = async (req, res) => {
+  const userId = req.user.id;
 
+  try {
+    const result = await Entry.findRecentByUser(userId);
+
+    const formatted = result.map(entry => ({
+      id: entry.id,
+      title: entry.title,
+      entry_text: entry.entry_text,
+      emotion_id: entry.emotion_id,
+      entry_date: entry.entry_date instanceof Date
+        ? entry.entry_date.toISOString().split("T")[0]
+        : entry.entry_date,
+    }));
+
+    res.status(200).json(formatted);
+  } catch (error) {
+    console.error("Get recent entries error:", error);
+    res.status(500).json({ message: "Gagal mengambil entri terbaru." });
+  }
+};
+
+
+
+// @desc    Mendapatkan satu entri berdasarkan ID
+// @route   GET /api/entries/:id
+// @access  Private
 exports.getEntryById = async (req, res) => {
-    try {
-        const entryId = req.params.id;
-        const userId = req.user.userId;
+  try {
+    const entryId = req.params.id;
+    const userId = req.user.id;
 
-        const entry = await Entry.findById({ entryId, userId });
+    const entry = await Entry.findById(entryId, userId); // ✅ panggil langsung param
 
-        if (!entry) {
-            return res.status(404).json({ message: 'Entri tidak ditemukan atau Anda tidak memiliki akses.' });
-        }
-
-        res.status(200).json(entry);
-    } catch (error) {
-        console.error('Get entry by ID error:', error);
-        res.status(500).json({ message: 'Gagal mengambil data entri.' });
+    if (!entry) {
+      return res.status(404).json({ message: 'Entri tidak ditemukan atau Anda tidak memiliki akses.' });
     }
-};
 
+    res.status(200).json(entry);
+  } catch (error) {
+    console.error('Get entry by ID error:', error);
+    res.status(500).json({ message: 'Gagal mengambil data entri.' });
+  }
+};
 
 // @desc    Menghapus sebuah entri
 // @route   DELETE /api/entries/:id
 // @access  Private
 exports.deleteEntry = async (req, res) => {
-    const entryId = req.params.id;
-    const userId = req.user.userId;
+  const entryId = req.params.id;
+  const userId = req.user.id;
 
-    try {
-        const deletedEntry = await Entry.delete({ entryId, userId });
-        if (!deletedEntry) {
-            // Ini terjadi jika entri tidak ada atau bukan milik user tersebut
-            return res.status(404).json({ message: 'Entri tidak ditemukan atau Anda tidak punya akses.' });
-        }
-        res.status(200).json({ message: 'Entri berhasil dihapus.' });
-    } catch (error) {
-        console.error('Delete entry error:', error);
-        res.status(500).json({ message: 'Gagal menghapus entri.' });
+  try {
+    const deletedEntry = await Entry.delete(entryId, userId); // ✅
+    if (!deletedEntry) {
+      return res.status(404).json({ message: 'Entri tidak ditemukan atau Anda tidak punya akses.' });
     }
+    res.status(200).json({ message: 'Entri berhasil dihapus.' });
+  } catch (error) {
+    console.error('Delete entry error:', error);
+    res.status(500).json({ message: 'Gagal menghapus entri.' });
+  }
+};
+
+// entryController.js
+exports.getEntriesByDateRange = async (req, res) => {
+  const userId = req.user.id;
+  const { start, end } = req.query;
+
+  try {
+    const result = await Entry.findByDateRange(userId, start, end);
+    const formatted = result.map(entry => ({
+      id: entry.id,
+      title: entry.title,
+      entry_text: entry.entry_text,
+      emotion_id: entry.emotion_id,
+      entry_date: entry.entry_date instanceof Date
+        ? entry.entry_date.toISOString().split("T")[0]
+        : entry.entry_date,
+    }));
+
+    res.status(200).json(formatted);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Gagal mengambil entri berdasarkan rentang tanggal." });
+  }
 };

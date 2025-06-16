@@ -1,21 +1,17 @@
-const db = require("../config/db");
+const { DataTypes } = require('sequelize');
+const db = require('../config/db');  // Pastikan db.js sudah dikonfigurasi dengan benar
 
-class Emotion {
-  /**
-   * Mengambil semua data emosi dari database.
-   * @returns {Promise<Array>}
-   */
-  static async findAll() {
-    try {
-      const result = await db.query(
-        "SELECT * FROM tbl_emotions ORDER BY emotion_id ASC"
-      );
-      return result.rows;
-    } catch (error) {
-      //
-      throw new Error(`Gagal mengambil data emosi: ${error.message}`);
-    }
+// Definisikan model emotion
+const Emotion = db.define('Emotion', {
+  emotionType: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  description: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
-}
+});
 
+// Export model Emotion
 module.exports = Emotion;

@@ -1,25 +1,25 @@
 const express = require('express');
 const router = express.Router();
+
 const entryController = require('../Controller/entryController');
-const { protect } = require('../middleware/authMiddleware');
+const authMiddleware = require('../middleware/authMiddleware');
 
-const { 
-    createEntry, 
-    getAllEntries, 
-    deleteEntry, 
-    getEntryById 
-} = require('../Controller/entryController');
+// Route untuk membuat entry baru
+router.post('/entries', authMiddleware, entryController.createEntry);
+
+// Route untuk mendapatkan semua entry user yang login
+router.get('/entries', authMiddleware, entryController.getAllEntries);
+
+// Route untuk mendapatkan satu entry berdasarkan ID
+router.get('/entries/:id', authMiddleware, entryController.getEntryById);
+
+router.get("/entries/recent", authMiddleware, entryController.getRecentEntries);
+
+// routes/entryRoutes.js
+router.get("/entries/range", authMiddleware, entryController.getEntriesByDateRange);
 
 
-router.use(protect);
+// Route untuk menghapus entry berdasarkan ID
+router.delete('/entries/:id', authMiddleware, entryController.deleteEntry);
 
-// Definisi rute
-router.route('/')
-    .get(entryController.getAllEntries)
-    .post(entryController.createEntry);
-
-router.route('/:id')
-    .get(entryController.getEntryById) 
-    .delete(entryController.deleteEntry);
-    
 module.exports = router;
